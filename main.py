@@ -1,7 +1,6 @@
 import base64
 from fastapi import FastAPI, UploadFile, File
 import easyocr
-import os
 import shutil
 import uuid
 import asyncio
@@ -11,6 +10,10 @@ import re
 from metaphone import doublemetaphone
 from openai import OpenAI
 from match_drugs import match_medicamentos
+from dotenv import load_dotenv
+import os
+
+load_dotenv() 
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY") ,
