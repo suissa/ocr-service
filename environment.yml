@@ -1,0 +1,13 @@
+name: fastapi-easyocr
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - fastapi==0.104.1
+      - uvicorn==0.24.0
+      - python-multipart==0.0.6
+      - easyocr==1.7.0
+      - Pillow==10.1.0
