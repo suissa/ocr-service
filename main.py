@@ -29,9 +29,9 @@ KNOWN_MEDICAMENTOS = [
 ]
 KNOWN_METAPHONES = {doublemetaphone(med)[0]: med for med in KNOWN_MEDICAMENTOS}
 
-def extract_text_base64(base64_string: str, number: str):
-    print(f"Extracting text for base64: {base64_string}")
-    print(f"Extracting text for number: {number}")
+def extract_text_base64(payload: dict):
+    print(f"Extracting text for base64: {payload['base64_string']}")
+    print(f"Extracting text for number: {payload['number']}")
     try:
         # Garante que o diretório existe
         os.makedirs("uploads", exist_ok=True)
@@ -42,7 +42,7 @@ def extract_text_base64(base64_string: str, number: str):
 
         # Decodifica e salva
         with open(file_path, "wb") as f:
-            f.write(base64.b64decode(base64_string))
+            f.write(base64.b64decode(payload['base64_string']))
 
         # Extrai o texto
         results = reader.readtext(file_path, detail=0)
@@ -56,8 +56,8 @@ def extract_text_base64(base64_string: str, number: str):
         medicamentos_match = match_medicamentos(texto_normalizado)
 
         rabbitmq_client.publish_event(
-        "ocr.response", number, {
-            "number": number,
+        "ocr.response", payload['number'], {
+            "number": payload['number'],
             "texto_extraido": raw_text,
             "texto_normalizado": texto_normalizado,
             "match_medicamentos": medicamentos_match,
