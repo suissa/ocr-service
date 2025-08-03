@@ -69,10 +69,15 @@ def extract_text_base64(payload: dict):
 rabbitmq_uri = os.getenv("RABBITMQ_URI") or "amqp://localhost:5672"
 rabbitmq_client = RabbitMQClient(rabbitmq_uri)
 
+print("Subscribing to event")
 rabbitmq_client.subscribe_to_event(
     "ocr.exchange", "ocr.queue", "extract_text", extract_text_base64)
+print("Event subscribed")
 
+print("Starting RabbitMQ client")
 rabbitmq_client.start()
+
+print("RabbitMQ client started")
 
 def normalizar_texto(texto: str) -> str:
     texto = unidecode.unidecode(texto.lower())

@@ -64,7 +64,9 @@ class RabbitMQClient:
         print("[OUTBOX]", event)
 
     def start(self):
+        print("na lib Starting RabbitMQ client")
         self.channel.start_consuming()
 
     def close(self):
+        print("Closing RabbitMQ client")
         self.connection.close()
