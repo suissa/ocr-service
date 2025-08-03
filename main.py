@@ -118,23 +118,24 @@ Texto:
 
 @app.post("/api/ocr")
 async def extract_text(file: UploadFile = File(...)):
+    print(f"Recebendo arquivo: {file.filename}")
     try:
         filename = f"{uuid.uuid4().hex}_{file.filename}"
         file_path = os.path.join("uploads", filename)
         os.makedirs("uploads", exist_ok=True)
-
+        print(f"Salvando arquivo em: {file_path}")
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-
+        print(f"Arquivo salvo em: {file_path}")
         results = reader.readtext(file_path, detail=0)
         raw_text = " ".join(results)
         os.remove(file_path)
-
+        print(f"Arquivo removido: {file_path}")
         texto_normalizado = normalizar_texto(raw_text)
-
+        print(f"Texto normalizado: {texto_normalizado}")
         medicamentos_match = match_medicamentos(texto_normalizado)
         # medicamentos_openai = await extract_drug_names_openai(texto_normalizado)
-
+        print(f"Medicamentos encontrados: {medicamentos_match}")
         return {
             "texto_extraido": raw_text,
             "texto_normalizado": texto_normalizado,
@@ -142,7 +143,7 @@ async def extract_text(file: UploadFile = File(...)):
             "match_medicamentos": medicamentos_match,
             "success": True
         }
-
+    
     except Exception as e:
         return {"error": str(e), "success": False}
 
