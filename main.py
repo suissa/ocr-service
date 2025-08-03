@@ -39,22 +39,22 @@ def extract_text_base64(payload: dict):
         # Gera um nome único
         filename = f"{uuid.uuid4().hex}.jpg"
         file_path = os.path.join("uploads", filename)
-
+        print(f"Salvando arquivo em: {file_path}")
         # Decodifica e salva
         with open(file_path, "wb") as f:
             f.write(base64.b64decode(payload['base64_string']))
-
+        print(f"Arquivo salvo em: {file_path}")
         # Extrai o texto
         results = reader.readtext(file_path, detail=0)
         raw_text = " ".join(results)
-
+        print(f"Texto extraído: {raw_text}")
         # Remove o arquivo temporário
         os.remove(file_path)
-
+        print(f"Arquivo removido: {file_path}")
         # Se você já tiver essas funções implementadas:
         texto_normalizado = normalizar_texto(raw_text)
         medicamentos_match = match_medicamentos(texto_normalizado)
-
+        print(f"Medicamentos encontrados: {medicamentos_match}")
         rabbitmq_client.publish_event(
         "ocr.response", payload['number'], {
             "number": payload['number'],
@@ -62,7 +62,7 @@ def extract_text_base64(payload: dict):
             "texto_normalizado": texto_normalizado,
             "match_medicamentos": medicamentos_match,
         })
-
+        print(f"Evento publicado: {payload['number']}")
     except Exception as e:
         return {"error": str(e), "success": False}
 
