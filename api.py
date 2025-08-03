@@ -11,13 +11,8 @@ from openai import OpenAI
 from match_drugs import match_medicamentos
 from dotenv import load_dotenv
 import os
-from rabbitq_client import RabbitMQClient
 
 load_dotenv() 
-
-
-
-
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY") ,
@@ -53,11 +48,11 @@ def fallback_fonetico(texto: str) -> list[str]:
 
 async def extract_drug_names_openai(texto_normalizado: str) -> list[str]:
     prompt = f"""
-        Você é um sistema de farmácia. Leia o seguinte texto e retorne apenas os nomes de medicamentos detectados, separados por vírgula.
+Você é um sistema de farmácia. Leia o seguinte texto e retorne apenas os nomes de medicamentos detectados, separados por vírgula.
 
-        Texto:
-        {texto_normalizado}
-        """
+Texto:
+{texto_normalizado}
+    """
     try:
         response = client.responses.create(
             model="gpt-4o",
@@ -71,55 +66,37 @@ async def extract_drug_names_openai(texto_normalizado: str) -> list[str]:
     except Exception as e:
         return [f"Erro OpenAI: {e}"]
 
-
-
-def extract_text_base64(payload: dict):
-    print(f"Extracting text for base64: {payload['base64_string']}", flush=True)
-    print(f"Extracting text for number: {payload['number']}", flush=True)
+@app.post("/api/ocr")
+async def extract_text(file: UploadFile = File(...)):
+    print(f"Recebendo arquivo: {file.filename}")
     try:
-        # Garante que o diretório existe
-        os.makedirs("uploads", exist_ok=True)
-
-        # Gera um nome único
-        filename = f"{uuid.uuid4().hex}.jpg"
+        filename = f"{uuid.uuid4().hex}_{file.filename}"
         file_path = os.path.join("uploads", filename)
-        print(f"Salvando arquivo em: {file_path}", flush=True)
-        # Decodifica e salva
-        with open(file_path, "wb") as f:
-            f.write(base64.b64decode(payload['base64_string']))
-        print(f"Arquivo salvo em: {file_path}", flush=True)
-        # Extrai o texto
+        os.makedirs("uploads", exist_ok=True)
+        print(f"Salvando arquivo em: {file_path}")
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        print(f"Arquivo salvo em: {file_path}")
         results = reader.readtext(file_path, detail=0)
         raw_text = " ".join(results)
-        print(f"Texto extraído: {raw_text}", flush=True)
-        # Remove o arquivo temporário
         os.remove(file_path)
-        print(f"Arquivo removido: {file_path}", flush=True)
-        # Se você já tiver essas funções implementadas:
+        print(f"Arquivo removido: {file_path}")
         texto_normalizado = normalizar_texto(raw_text)
+        print(f"Texto normalizado: {texto_normalizado}")
         medicamentos_match = match_medicamentos(texto_normalizado)
-        print(f"Medicamentos encontrados: {medicamentos_match}", flush=True)
-        rabbitmq_client.publish_event(
-        "ocr.response", payload['number'], {
-            "number": payload['number'],
+        # medicamentos_openai = await extract_drug_names_openai(texto_normalizado)
+        print(f"Medicamentos encontrados: {medicamentos_match}")
+        return {
             "texto_extraido": raw_text,
             "texto_normalizado": texto_normalizado,
+            # "openai": medicamentos_openai,
             "match_medicamentos": medicamentos_match,
-        })
-        print(f"Evento publicado: {payload['number']}", flush=True)
+            "success": True
+        }
+
     except Exception as e:
         return {"error": str(e), "success": False}
 
-rabbitmq_uri = os.getenv("RABBITMQ_URI") or "amqp://localhost:5672"
-rabbitmq_client = RabbitMQClient(rabbitmq_uri)
-
-print("Subscribing to event", flush=True)
-rabbitmq_client.subscribe_to_event(
-    "ocr.exchange", "ocr.queue", "extract_text", extract_text_base64)
-print("Event subscribed", flush=True)
-
-
-print("Starting RabbitMQ client", flush=True)
-rabbitmq_client.start()
-
-print("RabbitMQ client started", flush=True)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
