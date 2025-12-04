@@ -99,13 +99,15 @@ def extract_text_base64(payload: dict):
         texto_normalizado = normalizar_texto(raw_text)
         medicamentos_match = match_medicamentos(texto_normalizado)
         print(f"Medicamentos encontrados: {medicamentos_match}", flush=True)
-        rabbitmq_client.publish_event(
-        "ocr.response", payload['number'], {
+        responseData = {
             "number": payload['number'],
             "texto_extraido": raw_text,
             "texto_normalizado": texto_normalizado,
             "match_medicamentos": medicamentos_match,
-        })
+        }
+        print(f"Response data: {responseData}", flush=True)
+        rabbitmq_client.publish_event(
+        "ocr.response", payload['number'], responseData)
         print(f"Evento publicado: {payload['number']}", flush=True)
     except Exception as e:
         return {"error": str(e), "success": False}
@@ -115,7 +117,7 @@ rabbitmq_client = RabbitMQClient(rabbitmq_uri)
 
 print("Subscribing to event", flush=True)
 rabbitmq_client.subscribe_to_event(
-    "ocr.exchange", "ocr.queue", "extract_text", extract_text_base64)
+    "ocr.request", "ocr.queue", "extract_text_base64", extract_text_base64)
 print("Event subscribed", flush=True)
 
 
